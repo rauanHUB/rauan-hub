@@ -1,13 +1,14 @@
 -- =========================================================
--- RAUAN HUB - VERSÃO ULTRA ESTÁVEL (MOBILE / DELTA)
+-- RAUAN HUB - VERSÃO DEFINITIVA (MOBILE / DELTA)
 -- =========================================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
--- Variáveis de Configuração
+-- Variáveis de Estado
 local speedValue = 16
 local isSpeedActive = false
 local jumpValue = 50
@@ -22,9 +23,109 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RauanHubGui"
 ScreenGui.ResetOnSpawn = false
 
--- Garantir injeção no PlayerGui (sem usar gethui)
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.Parent = playerGui
+
+---------------------------------------------------------
+-- SISTEMA DE NOTIFICAÇÕES (TOAST NOTIFICATIONS)
+---------------------------------------------------------
+local NotificationContainer = Instance.new("Frame")
+NotificationContainer.Name = "NotificationContainer"
+NotificationContainer.Size = UDim2.new(0, 200, 1, 0)
+NotificationContainer.Position = UDim2.new(1, -210, 0, -20)
+NotificationContainer.BackgroundTransparency = 1
+NotificationContainer.Parent = ScreenGui
+
+local NotifList = Instance.new("UIListLayout")
+NotifList.VerticalAlignment = Enum.VerticalAlignment.Bottom
+NotifList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+NotifList.Padding = UDim.new(0, 8)
+NotifList.Parent = NotificationContainer
+
+local function Notify(titleText, messageText)
+    local NotifFrame = Instance.new("Frame")
+    NotifFrame.Size = UDim2.new(0, 190, 0, 45)
+    NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
+    NotifFrame.BackgroundTransparency = 0.2
+    NotifFrame.Parent = NotificationContainer
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = NotifFrame
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(160, 80, 255)
+    Stroke.Thickness = 1
+    Stroke.Parent = NotifFrame
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -16, 0, 16)
+    Title.Position = UDim2.new(0, 10, 0, 5)
+    Title.Text = titleText
+    Title.TextColor3 = Color3.fromRGB(180, 100, 255)
+    Title.TextSize = 11
+    Title.Font = Enum.Font.SourceSansBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
+    Title.Parent = NotifFrame
+
+    local Msg = Instance.new("TextLabel")
+    Msg.Size = UDim2.new(1, -16, 0, 18)
+    Msg.Position = UDim2.new(0, 10, 0, 20)
+    Msg.Text = messageText
+    Msg.TextColor3 = Color3.fromRGB(220, 220, 230)
+    Msg.TextSize = 10
+    Msg.Font = Enum.Font.SourceSans
+    Msg.TextXAlignment = Enum.TextXAlignment.Left
+    Msg.BackgroundTransparency = 1
+    Msg.Parent = NotifFrame
+
+    task.delay(3, function()
+        if NotifFrame and NotifFrame.Parent then
+            local tween = TweenService:Create(NotifFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1})
+            tween:Play()
+            tween.Completed:Connect(function() NotifFrame:Destroy() end)
+        end
+    end)
+end
+
+---------------------------------------------------------
+-- SISTEMA DE DRAG (ARRASTAR ELEMENTOS)
+---------------------------------------------------------
+local function MakeDraggable(guiObject, dragHandle)
+    dragHandle = dragHandle or guiObject
+    local dragging, dragInput, dragStart, startPos
+
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = guiObject.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    dragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            guiObject.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
 
 ---------------------------------------------------------
 -- BOTÃO FLUTUANTE DE ABRIR/FECHAR ('R')
@@ -51,6 +152,8 @@ ToggleStroke.Color = Color3.fromRGB(160, 80, 255)
 ToggleStroke.Thickness = 2
 ToggleStroke.Parent = ToggleButton
 
+MakeDraggable(ToggleButton, ToggleButton)
+
 ---------------------------------------------------------
 -- JANELA DO MENU
 ---------------------------------------------------------
@@ -69,13 +172,15 @@ MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
 ---------------------------------------------------------
--- CABEÇALHO (HEADER)
+-- CABEÇALHO (HEADER - ARRASTÁVEL)
 ---------------------------------------------------------
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 42)
 Header.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
+
+MakeDraggable(MainFrame, Header)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0, 150, 0, 18)
@@ -156,7 +261,7 @@ local function CreateTabButton(name, positionY)
     PageScroll.Size = UDim2.new(1, -130, 1, -42)
     PageScroll.Position = UDim2.new(0, 130, 0, 42)
     PageScroll.BackgroundTransparency = 1
-    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 420)
+    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 520)
     PageScroll.ScrollBarThickness = 4
     PageScroll.ScrollBarImageColor3 = Color3.fromRGB(160, 80, 255)
     PageScroll.Active = true
@@ -198,17 +303,35 @@ Tab1Data.Page.Visible = true
 Tab1Data.Indicator.Visible = true
 Tab1Data.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Perfil de Usuário
+---------------------------------------------------------
+-- PERFIL DE USUÁRIO (COM AVATAR RESTAURADO)
+---------------------------------------------------------
 local UserFrame = Instance.new("Frame")
-UserFrame.Size = UDim2.new(1, 0, 0, 42)
-UserFrame.Position = UDim2.new(0, 0, 1, -42)
+UserFrame.Size = UDim2.new(1, 0, 0, 48)
+UserFrame.Position = UDim2.new(0, 0, 1, -48)
 UserFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 UserFrame.BorderSizePixel = 0
 UserFrame.Parent = Sidebar
 
+local AvatarImage = Instance.new("ImageLabel")
+AvatarImage.Size = UDim2.new(0, 32, 0, 32)
+AvatarImage.Position = UDim2.new(0, 8, 0.5, -16)
+AvatarImage.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+AvatarImage.BackgroundTransparency = 0
+AvatarImage.Parent = UserFrame
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(1, 0)
+AvatarCorner.Parent = AvatarImage
+
+pcall(function()
+    local content = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    AvatarImage.Image = content
+end)
+
 local DisplayName = Instance.new("TextLabel")
-DisplayName.Size = UDim2.new(0, 110, 0, 12)
-DisplayName.Position = UDim2.new(0, 12, 0, 8)
+DisplayName.Size = UDim2.new(0, 80, 0, 12)
+DisplayName.Position = UDim2.new(0, 46, 0, 10)
 DisplayName.Text = LocalPlayer.DisplayName
 DisplayName.TextColor3 = Color3.fromRGB(240, 240, 240)
 DisplayName.TextSize = 11
@@ -218,8 +341,8 @@ DisplayName.BackgroundTransparency = 1
 DisplayName.Parent = UserFrame
 
 local Username = Instance.new("TextLabel")
-Username.Size = UDim2.new(0, 110, 0, 10)
-Username.Position = UDim2.new(0, 12, 0, 22)
+Username.Size = UDim2.new(0, 80, 0, 10)
+Username.Position = UDim2.new(0, 46, 0, 24)
 Username.Text = "@" .. LocalPlayer.Name
 Username.TextColor3 = Color3.fromRGB(130, 80, 200)
 Username.TextSize = 9
@@ -263,6 +386,39 @@ BannerSub.TextXAlignment = Enum.TextXAlignment.Left
 BannerSub.BackgroundTransparency = 1
 BannerSub.Parent = Banner
 
+-- CARD DE HISTÓRICO DE UPDATES
+local UpdateCard = Instance.new("Frame")
+UpdateCard.Size = UDim2.new(0.92, 0, 0, 80)
+UpdateCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+UpdateCard.Parent = MainHubPage
+
+local UpdateCorner = Instance.new("UICorner")
+UpdateCorner.CornerRadius = UDim.new(0, 8)
+UpdateCorner.Parent = UpdateCard
+
+local UpdateTitle = Instance.new("TextLabel")
+UpdateTitle.Size = UDim2.new(0, 200, 0, 18)
+UpdateTitle.Position = UDim2.new(0, 12, 0, 8)
+UpdateTitle.Text = "🚀 Histórico de Updates"
+UpdateTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+UpdateTitle.TextSize = 12
+UpdateTitle.Font = Enum.Font.SourceSansBold
+UpdateTitle.TextXAlignment = Enum.TextXAlignment.Left
+UpdateTitle.BackgroundTransparency = 1
+UpdateTitle.Parent = UpdateCard
+
+local UpdateText = Instance.new("TextLabel")
+UpdateText.Size = UDim2.new(0.95, 0, 0, 45)
+UpdateText.Position = UDim2.new(0, 12, 0, 28)
+UpdateText.Text = "• Nenhuma atualização no momento.\n• Novas funções em breve!"
+UpdateText.TextColor3 = Color3.fromRGB(160, 160, 180)
+UpdateText.TextSize = 11
+UpdateText.Font = Enum.Font.SourceSans
+UpdateText.TextXAlignment = Enum.TextXAlignment.Left
+UpdateText.BackgroundTransparency = 1
+UpdateText.Parent = UpdateCard
+
+-- CARD REDES SOCIAIS
 local SocialCard = Instance.new("Frame")
 SocialCard.Size = UDim2.new(0.92, 0, 0, 120)
 SocialCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -316,12 +472,13 @@ CopyDiscordBtn.MouseButton1Click:Connect(function()
         end
     end)
     CopyDiscordBtn.Text = "Copiado com Sucesso!"
+    Notify("Rauan Hub", "Discord copiado para a área de transferência!")
     task.wait(2)
     CopyDiscordBtn.Text = "Copiar User do Discord"
 end)
 
 ---------------------------------------------------------
--- ABA 2: MENU
+-- ABA 2: MENU (OPÇÕES)
 ---------------------------------------------------------
 local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onValueChange)
     local Container = Instance.new("Frame")
@@ -379,158 +536,14 @@ local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onV
             ToggleBtn.Text = "Ativado"
             ToggleBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 240)
             ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Notify(titleText, "Status: Ativado")
         else
             ToggleBtn.Text = "Desativado"
             ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
             ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
+            Notify(titleText, "Status: Desativado")
         end
         onToggle(active)
     end)
 
-    TextBox.FocusLost:Connect(function()
-        local num = tonumber(TextBox.Text)
-        if num then onValueChange(num) else TextBox.Text = tostring(defaultVal) end
-    end)
-end
-
-local function CreateSimpleToggle(parent, titleText, onToggle)
-    local Container = Instance.new("Frame")
-    Container.Size = UDim2.new(0.92, 0, 0, 50)
-    Container.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    Container.Parent = parent
-    
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 8)
-    Corner.Parent = Container
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.6, 0, 1, 0)
-    Label.Position = UDim2.new(0, 12, 0, 0)
-    Label.Text = titleText
-    Label.TextColor3 = Color3.fromRGB(220, 220, 230)
-    Label.TextSize = 12
-    Label.Font = Enum.Font.SourceSansBold
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.BackgroundTransparency = 1
-    Label.Parent = Container
-
-    local ToggleBtn = Instance.new("TextButton")
-    ToggleBtn.Size = UDim2.new(0.3, 0, 0, 26)
-    ToggleBtn.Position = UDim2.new(0.66, 0, 0.5, -13)
-    ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-    ToggleBtn.Text = "OFF"
-    ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
-    ToggleBtn.TextSize = 11
-    ToggleBtn.Font = Enum.Font.SourceSansBold
-    ToggleBtn.Parent = Container
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 5)
-    BtnCorner.Parent = ToggleBtn
-
-    local active = false
-    ToggleBtn.MouseButton1Click:Connect(function()
-        active = not active
-        if active then
-            ToggleBtn.Text = "ON"
-            ToggleBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 240)
-            ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            ToggleBtn.Text = "OFF"
-            ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-            ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
-        end
-        onToggle(active)
-    end)
-end
-
-CreateFeatureControl(MenuPage, "Velocidade (Speed)", 16, function(s) isSpeedActive = s end, function(v) speedValue = v end)
-CreateFeatureControl(MenuPage, "Pulo (Jump Booster)", 50, function(s) isJumpActive = s end, function(v) jumpValue = v end)
-CreateFeatureControl(MenuPage, "Voo Mobile (Fly)", 50, function(s) flyActive = s end, function(v) flySpeed = v end)
-CreateSimpleToggle(MenuPage, "Atravessar Paredes (Noclip)", function(s) noclipActive = s end)
-CreateSimpleToggle(MenuPage, "Pulo Infinito (Inf Jump)", function(s) infJumpActive = s end)
-
----------------------------------------------------------
--- LOOPS E SISTEMAS ATIVOS
----------------------------------------------------------
-local lastUpdate = tick()
-local frameCount = 0
-
-RunService.RenderStepped:Connect(function()
-    frameCount = frameCount + 1
-    if tick() - lastUpdate >= 1 then
-        local fps = math.floor(frameCount / (tick() - lastUpdate))
-        StatsLabel.Text = "FPS: " .. tostring(fps)
-        frameCount = 0
-        lastUpdate = tick()
-    end
-end)
-
-RunService.Stepped:Connect(function()
-    if LocalPlayer.Character then
-        if noclipActive then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end
-        
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            if isSpeedActive then humanoid.WalkSpeed = speedValue end
-            if isJumpActive then 
-                humanoid.UseJumpPower = true
-                humanoid.JumpPower = jumpValue 
-            end
-        end
-    end
-end)
-
-UserInputService.JumpRequest:Connect(function()
-    if infJumpActive and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
-end)
-
-local bodyVelocity, bodyGyro
-RunService.RenderStepped:Connect(function()
-    if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local root = LocalPlayer.Character.HumanoidRootPart
-        local camera = workspace.CurrentCamera
-        
-        if not root:FindFirstChild("RauanFlyVel") then
-            bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.Name = "RauanFlyVel"
-            bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-            bodyVelocity.Parent = root
-            
-            bodyGyro = Instance.new("BodyGyro")
-            bodyGyro.Name = "RauanFlyGyro"
-            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-            bodyGyro.P = 10000
-            bodyGyro.Parent = root
-        end
-
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        local moveDir = humanoid and humanoid.MoveDirection or Vector3.new()
-        bodyGyro.CFrame = camera.CFrame
-        bodyVelocity.Velocity = (camera.CFrame.LookVector * moveDir.Z * -flySpeed) + (camera.CFrame.RightVector * moveDir.X * flySpeed)
-    else
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local root = LocalPlayer.Character.HumanoidRootPart
-            if root:FindFirstChild("RauanFlyVel") then root.RauanFlyVel:Destroy() end
-            if root:FindFirstChild("RauanFlyGyro") then root.RauanFlyGyro:Destroy() end
-        end
-    end
-end)
-
-local function ToggleGui()
-    MainFrame.Visible = not MainFrame.Visible
-end
-
-ToggleButton.MouseButton1Click:Connect(ToggleGui)
-CloseBtn.MouseButton1Click:Connect(ToggleGui)
+    TextBox.FocusLost
