@@ -1,82 +1,215 @@
 -- RAUAN HUB - Multi-Tab UI para Mobile
-local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Variáveis Globais de Estado
-local speedValue = 16
-local isSpeedActive = false
-local jumpValue = 50
-local isJumpActive = false
-local noclipActive = false
-local flyActive = false
-local flySpeed = 50
-local infJumpActive = false
-
--- Interface Principal
+-- UI Principal
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "RauanHubGui"
+ScreenGui.Name = "RauanHubGUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
----------------------------------------------------------
--- BOTÃO FLUTUANTE (LETRA 'R')
----------------------------------------------------------
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Position = UDim2.new(0.85, 0, 0.65, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-ToggleButton.Text = "R"
-ToggleButton.TextColor3 = Color3.fromRGB(160, 80, 255)
-ToggleButton.TextSize = 28
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.Active = true
-ToggleButton.Draggable = true
-ToggleButton.Parent = ScreenGui
+-- Proteção para o Delta / Executores
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = game:GetService("CoreGui")
+elseif gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = game:GetService("CoreGui")
+end
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 14)
-ToggleCorner.Parent = ToggleButton
+-- Ícone Flutuante (Abrir/Fechar)
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Name = "OpenButton"
+OpenBtn.Parent = ScreenGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+OpenBtn.Position = UDim2.new(0, 10, 0.4, 0)
+OpenBtn.Size = UDim2.new(0, 50, 0, 50)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.Text = "HUB"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 18.000
+OpenBtn.Active = true
+OpenBtn.Draggable = true
 
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(160, 80, 255)
-ToggleStroke.Thickness = 2
-ToggleStroke.Parent = ToggleButton
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(0, 25)
+OpenCorner.Parent = OpenBtn
 
----------------------------------------------------------
--- JANELA PRINCIPAL (MAIN FRAME)
----------------------------------------------------------
+-- Janela do Hub
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
+MainFrame.Size = UDim2.new(0, 340, 0, 280)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Visible = true
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
----------------------------------------------------------
--- BARRA SUPERIOR (HEADER)
----------------------------------------------------------
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 42)
-Header.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-Header.BorderSizePixel = 0
-Header.Parent = MainFrame
+-- Barra Superior (Título e Fechar)
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 150, 0, 18)
-Title.Position = UDim2.new(0, 15, 0, 5)
-Title.Text = "Rauan Script"
-Title.TextColor3 = Color3.fromRGB(170, 90, 255)
-Title.TextSize = 14
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = TitleBar
+
+local TitleText = Instance.new("TextLabel")
+TitleText.Parent = TitleBar
+TitleText.BackgroundTransparency = 1
+TitleText.Position = UDim2.new(0, 10, 0, 0)
+TitleText.Size = UDim2.new(0, 200, 1, 0)
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.Text = "Rauan Hub Mobile"
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleText.TextSize = 16
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Botão [X] Arrumado (Texto limpo, sem imagem de loading)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Name = "CloseBtn"
+CloseBtn.Parent = TitleBar
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+
+-- Container do Scroll Ajustado (Sem bugs ao arrastar)
+local ScrollContainer = Instance.new("ScrollingFrame")
+ScrollContainer.Parent = MainFrame
+ScrollContainer.BackgroundTransparency = 1
+ScrollContainer.Position = UDim2.new(0, 10, 0, 45)
+ScrollContainer.Size = UDim2.new(1, -20, 1, -55)
+ScrollContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
+ScrollContainer.ScrollBarThickness = 6
+ScrollContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = ScrollContainer
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+
+-- Lógica de Abrir/Fechar
+OpenBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+-----------------------------------------------------
+-- FUNÇÕES E BOTÕES DO HUB
+-----------------------------------------------------
+
+-- 1. Pulo Infinito (Infinite Jump)
+local infJumpActive = false
+local InfJumpBtn = Instance.new("TextButton")
+InfJumpBtn.Parent = ScrollContainer
+InfJumpBtn.Size = UDim2.new(1, -10, 0, 40)
+InfJumpBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+InfJumpBtn.Font = Enum.Font.SourceSansBold
+InfJumpBtn.Text = "Pulo Infinito: OFF"
+InfJumpBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+InfJumpBtn.TextSize = 15
+
+local BtnCorner1 = Instance.new("UICorner")
+BtnCorner1.CornerRadius = UDim.new(0, 8)
+BtnCorner1.Parent = InfJumpBtn
+
+InfJumpBtn.MouseButton1Click:Connect(function()
+    infJumpActive = not infJumpActive
+    if infJumpActive then
+        InfJumpBtn.Text = "Pulo Infinito: ON"
+        InfJumpBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        InfJumpBtn.Text = "Pulo Infinito: OFF"
+        InfJumpBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if infJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+-- 2. Toggle Fly (Voo)
+local flyActive = false
+local flySpeed = 50
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Parent = ScrollContainer
+FlyBtn.Size = UDim2.new(1, -10, 0, 40)
+FlyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+FlyBtn.Font = Enum.Font.SourceSansBold
+FlyBtn.Text = "Voo (Fly): OFF"
+FlyBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+FlyBtn.TextSize = 15
+
+local BtnCorner2 = Instance.new("UICorner")
+BtnCorner2.CornerRadius = UDim.new(0, 8)
+BtnCorner2.Parent = FlyBtn
+
+FlyBtn.MouseButton1Click:Connect(function()
+    flyActive = not flyActive
+    if flyActive then
+        FlyBtn.Text = "Voo (Fly): ON"
+        FlyBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        FlyBtn.Text = "Voo (Fly): OFF"
+        FlyBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end)
+
+-- Sistema de Voo (Base)
+local bodyVelocity, bodyGyro
+RunService.RenderStepped:Connect(function()
+    if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root = LocalPlayer.Character.HumanoidRootPart
+        local camera = workspace.CurrentCamera
+        
+        if not root:FindFirstChild("RauanFlyVel") then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Name = "RauanFlyVel"
+            bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            bodyVelocity.Parent = root
+        end
+        
+        if not root:FindFirstChild("RauanFlyGyro") then
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "RauanFlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = root
+        end
+        
+        bodyGyro.CFrame = camera.CFrame
+        bodyVelocity.Velocity = camera.CFrame.LookVector * flySpeed
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local root = LocalPlayer.Character.HumanoidRootPart
+            if root:FindFirstChild("RauanFlyVel") then root.RauanFlyVel:Destroy() end
+            if root:FindFirstChild("RauanFlyGyro") then root.RauanFlyGyro:Destroy() end
+        end
+    end
+end)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
