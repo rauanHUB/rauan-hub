@@ -619,7 +619,7 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- SISTEMA DE FLY CORRIGIDO (Analógico para cima vai para frente normalmente)
+-- SISTEMA DE FLY COM SUBIDA E DESCIDA PELA CÂMERA
 local bodyVelocity, bodyGyro
 RunService.RenderStepped:Connect(function()
     if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -645,7 +645,9 @@ RunService.RenderStepped:Connect(function()
         bodyGyro.CFrame = camera.CFrame
         
         if moveDir.Magnitude > 0 then
-            bodyVelocity.Velocity = moveDir * flySpeed
+            -- Transforma a direção do analógico em relação para onde a câmera está apontando (incluindo cima/baixo)
+            local flyVector = (camera.CFrame.LookVector * -moveDir.Z) + (camera.CFrame.RightVector * moveDir.X)
+            bodyVelocity.Velocity = flyVector * flySpeed
         else
             bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         end
@@ -661,7 +663,6 @@ end)
 local function ToggleGui()
     MainFrame.Visible = not MainFrame.Visible
 end
-
 ToggleButton.MouseButton1Click:Connect(ToggleGui)
 CloseBtn.MouseButton1Click:Connect(ToggleGui)
 
