@@ -1,14 +1,9 @@
--- =========================================================
--- RAUAN HUB - VERSÃO DEFINITIVA (MOBILE / DELTA)
--- =========================================================
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
--- Variáveis de Estado
 local speedValue = 16
 local isSpeedActive = false
 local jumpValue = 50
@@ -18,17 +13,11 @@ local flyActive = false
 local flySpeed = 50
 local infJumpActive = false
 
--- Interface Principal
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RauanHubGui"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.Parent = playerGui
-
----------------------------------------------------------
--- SISTEMA DE NOTIFICAÇÕES (TOAST NOTIFICATIONS)
----------------------------------------------------------
 local NotificationContainer = Instance.new("Frame")
 NotificationContainer.Name = "NotificationContainer"
 NotificationContainer.Size = UDim2.new(0, 200, 1, 0)
@@ -89,9 +78,6 @@ local function Notify(titleText, messageText)
     end)
 end
 
----------------------------------------------------------
--- SISTEMA DE DRAG (ARRASTAR ELEMENTOS)
----------------------------------------------------------
 local function MakeDraggable(guiObject, dragHandle)
     dragHandle = dragHandle or guiObject
     local dragging, dragInput, dragStart, startPos
@@ -127,9 +113,6 @@ local function MakeDraggable(guiObject, dragHandle)
     end)
 end
 
----------------------------------------------------------
--- BOTÃO FLUTUANTE DE ABRIR/FECHAR ('R')
----------------------------------------------------------
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "ToggleButton"
 ToggleButton.Size = UDim2.new(0, 50, 0, 50)
@@ -154,9 +137,6 @@ ToggleStroke.Parent = ToggleButton
 
 MakeDraggable(ToggleButton, ToggleButton)
 
----------------------------------------------------------
--- JANELA DO MENU
----------------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 480, 0, 310)
@@ -171,9 +151,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
----------------------------------------------------------
--- CABEÇALHO (HEADER - ARRASTÁVEL)
----------------------------------------------------------
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 42)
 Header.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -225,9 +202,6 @@ CloseBtn.Font = Enum.Font.ArialBold
 CloseBtn.ZIndex = 10
 CloseBtn.Parent = Header
 
----------------------------------------------------------
--- NAVEGAÇÃO DE ABAS
----------------------------------------------------------
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 130, 1, -42)
 Sidebar.Position = UDim2.new(0, 0, 0, 42)
@@ -303,9 +277,6 @@ Tab1Data.Page.Visible = true
 Tab1Data.Indicator.Visible = true
 Tab1Data.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 
----------------------------------------------------------
--- PERFIL DE USUÁRIO (COM AVATAR RESTAURADO)
----------------------------------------------------------
 local UserFrame = Instance.new("Frame")
 UserFrame.Size = UDim2.new(1, 0, 0, 48)
 UserFrame.Position = UDim2.new(0, 0, 1, -48)
@@ -351,9 +322,6 @@ Username.TextXAlignment = Enum.TextXAlignment.Left
 Username.BackgroundTransparency = 1
 Username.Parent = UserFrame
 
----------------------------------------------------------
--- ABA 1: RAUAN HUB
----------------------------------------------------------
 local Banner = Instance.new("Frame")
 Banner.Size = UDim2.new(0.92, 0, 0, 75)
 Banner.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
@@ -386,7 +354,6 @@ BannerSub.TextXAlignment = Enum.TextXAlignment.Left
 BannerSub.BackgroundTransparency = 1
 BannerSub.Parent = Banner
 
--- CARD DE HISTÓRICO DE UPDATES
 local UpdateCard = Instance.new("Frame")
 UpdateCard.Size = UDim2.new(0.92, 0, 0, 80)
 UpdateCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -418,7 +385,6 @@ UpdateText.TextXAlignment = Enum.TextXAlignment.Left
 UpdateText.BackgroundTransparency = 1
 UpdateText.Parent = UpdateCard
 
--- CARD REDES SOCIAIS
 local SocialCard = Instance.new("Frame")
 SocialCard.Size = UDim2.new(0.92, 0, 0, 120)
 SocialCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -477,9 +443,6 @@ CopyDiscordBtn.MouseButton1Click:Connect(function()
     CopyDiscordBtn.Text = "Copiar User do Discord"
 end)
 
----------------------------------------------------------
--- ABA 2: MENU (OPÇÕES)
----------------------------------------------------------
 local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onValueChange)
     local Container = Instance.new("Frame")
     Container.Size = UDim2.new(0.92, 0, 0, 80)
@@ -546,4 +509,52 @@ local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onV
         onToggle(active)
     end)
 
-    TextBox.FocusLost
+    TextBox.FocusLost:Connect(function()
+        local num = tonumber(TextBox.Text)
+        if num then 
+            onValueChange(num)
+            Notify(titleText, "Valor alterado para: " .. tostring(num))
+        else 
+            TextBox.Text = tostring(defaultVal) 
+        end
+    end)
+end
+
+local function CreateSimpleToggle(parent, titleText, onToggle)
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(0.92, 0, 0, 50)
+    Container.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Container.Parent = parent
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Container
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.6, 0, 1, 0)
+    Label.Position = UDim2.new(0, 12, 0, 0)
+    Label.Text = titleText
+    Label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    Label.TextSize = 12
+    Label.Font = Enum.Font.SourceSansBold
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.BackgroundTransparency = 1
+    Label.Parent = Container
+
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Size = UDim2.new(0.3, 0, 0, 26)
+    ToggleBtn.Position = UDim2.new(0.66, 0, 0.5, -13)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+    ToggleBtn.Text = "OFF"
+    ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
+    ToggleBtn.TextSize = 11
+    ToggleBtn.Font = Enum.Font.SourceSansBold
+    ToggleBtn.Parent = Container
+
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 5)
+    BtnCorner.Parent = ToggleBtn
+
+    local active = false
+    ToggleBtn.MouseButton1Click:Connect(function()
+  
