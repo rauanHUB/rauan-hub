@@ -1,4 +1,4 @@
--- RAUAN HUB - Multi-Tab UI para Mobile (Corrigido)
+-- RAUAN HUB - Multi-Tab UI para Mobile (Versão Delta Executor)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,7 +19,10 @@ local infJumpActive = false
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RauanHubGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Suporte a CoreGui / PlayerGui para o Delta
+local parentTarget = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = parentTarget
 
 ---------------------------------------------------------
 -- BOTÃO FLUTUANTE (LETRA 'R')
@@ -34,8 +37,7 @@ ToggleButton.TextColor3 = Color3.fromRGB(160, 80, 255)
 ToggleButton.TextSize = 28
 ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.Active = true
-ToggleButton.Draggable = true
-ToggleButton.ZIndex = 10
+ToggleButton.ZIndex = 100
 ToggleButton.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
@@ -52,8 +54,8 @@ ToggleStroke.Parent = ToggleButton
 ---------------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+MainFrame.Size = UDim2.new(0, 480, 0, 310)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -155)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -113,6 +115,7 @@ CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(160, 80, 255)
 CloseBtn.TextSize = 16
 CloseBtn.Font = Enum.Font.ArialBold
+CloseBtn.ZIndex = 10
 CloseBtn.Parent = Header
 
 ---------------------------------------------------------
@@ -151,10 +154,12 @@ local function CreateTabButton(name, positionY)
     PageScroll.Size = UDim2.new(1, -130, 1, -42)
     PageScroll.Position = UDim2.new(0, 130, 0, 42)
     PageScroll.BackgroundTransparency = 1
-    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 380)
-    PageScroll.ScrollBarThickness = 3
+    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 420) -- Tamanho adequado para rolagem suave
+    PageScroll.ScrollBarThickness = 4
     PageScroll.ScrollBarImageColor3 = Color3.fromRGB(160, 80, 255)
-    PageScroll.Active = true -- Corrigido: evita rolar a câmera do jogo ao arrastar no mobile
+    PageScroll.Active = true
+    PageScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+    PageScroll.ElasticBehavior = Enum.ElasticBehavior.Never -- Impede que o Delta "puxe" a tela de volta pro topo
     PageScroll.Visible = false
     PageScroll.Parent = MainFrame
 
@@ -165,7 +170,7 @@ local function CreateTabButton(name, positionY)
 
     local PagePadding = Instance.new("UIPadding")
     PagePadding.PaddingTop = UDim.new(0, 10)
-    PagePadding.PaddingBottom = UDim.new(0, 15)
+    PagePadding.PaddingBottom = UDim.new(0, 20)
     PagePadding.Parent = PageScroll
 
     local tabData = {
@@ -210,7 +215,9 @@ local UserImage = Instance.new("ImageLabel")
 UserImage.Size = UDim2.new(0, 28, 0, 28)
 UserImage.Position = UDim2.new(0, 8, 0.5, -14)
 UserImage.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-UserImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+pcall(function()
+    UserImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+end)
 UserImage.Parent = UserFrame
 
 local UserImageCorner = Instance.new("UICorner")
@@ -337,10 +344,17 @@ local CopyCorner = Instance.new("UICorner")
 CopyCorner.CornerRadius = UDim.new(0, 5)
 CopyCorner.Parent = CopyDiscordBtn
 
+-- Cópia para Clipboard compatível com Delta
 CopyDiscordBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard("rauann.xxz")
-    end
+    pcall(function()
+        if setclipboard then
+            setclipboard("rauann.xxz")
+        elseif toclipboard then
+            toclipboard("rauann.xxz")
+        elseif set_clipboard then
+            set_clipboard("rauann.xxz")
+        end
+    end)
     CopyDiscordBtn.Text = "Copiado com Sucesso!"
     task.wait(2)
     CopyDiscordBtn.Text = "Copiar User do Discord"
@@ -535,19 +549,4 @@ end)
 -- Sistema de Pulo Infinito
 UserInputService.JumpRequest:Connect(function()
     if infJumpActive and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
-end)
-
--- Sistema de Voo (Fly Mobile Suave)
-local bodyVelocity, bodyGyro
-RunService.RenderStepped:Connect(function()
-    if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local root = LocalPlayer.Character.HumanoidRootPart
-        local camera = workspace.CurrentCamera
-        
-        if not root:FindFirstChild("RauanFlyVel") then
-            bodyVelocity = I
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass
