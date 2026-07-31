@@ -1,11 +1,13 @@
--- RAUAN HUB - Multi-Tab UI para Mobile
+-- =========================================================
+-- RAUAN HUB - VERSÃO ULTRA ESTÁVEL (MOBILE / DELTA)
+-- =========================================================
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
 local LocalPlayer = Players.LocalPlayer
 
--- Variáveis Globais de Estado
+-- Variáveis de Configuração
 local speedValue = 16
 local isSpeedActive = false
 local jumpValue = 50
@@ -19,10 +21,13 @@ local infJumpActive = false
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RauanHubGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Garantir injeção no PlayerGui (sem usar gethui)
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = playerGui
 
 ---------------------------------------------------------
--- BOTÃO FLUTUANTE (LETRA 'R')
+-- BOTÃO FLUTUANTE DE ABRIR/FECHAR ('R')
 ---------------------------------------------------------
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Name = "ToggleButton"
@@ -34,7 +39,7 @@ ToggleButton.TextColor3 = Color3.fromRGB(160, 80, 255)
 ToggleButton.TextSize = 28
 ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.Active = true
-ToggleButton.Draggable = true
+ToggleButton.ZIndex = 100
 ToggleButton.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
@@ -47,15 +52,16 @@ ToggleStroke.Thickness = 2
 ToggleStroke.Parent = ToggleButton
 
 ---------------------------------------------------------
--- JANELA PRINCIPAL (MAIN FRAME)
+-- JANELA DO MENU
 ---------------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+MainFrame.Size = UDim2.new(0, 480, 0, 310)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -155)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
+MainFrame.Active = true
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -63,7 +69,7 @@ MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
 ---------------------------------------------------------
--- BARRA SUPERIOR (HEADER)
+-- CABEÇALHO (HEADER)
 ---------------------------------------------------------
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 42)
@@ -96,7 +102,7 @@ SubTitle.Parent = Header
 local StatsLabel = Instance.new("TextLabel")
 StatsLabel.Size = UDim2.new(0, 150, 1, 0)
 StatsLabel.Position = UDim2.new(0.5, -75, 0, 0)
-StatsLabel.Text = "FPS: 60 | PING: 0ms"
+StatsLabel.Text = "FPS: --"
 StatsLabel.TextColor3 = Color3.fromRGB(150, 100, 255)
 StatsLabel.TextSize = 11
 StatsLabel.Font = Enum.Font.SourceSansBold
@@ -107,14 +113,15 @@ local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0.5, -15)
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Text = "✕"
+CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(160, 80, 255)
-CloseBtn.TextSize = 14
-CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.ArialBold
+CloseBtn.ZIndex = 10
 CloseBtn.Parent = Header
 
 ---------------------------------------------------------
--- MENU LATERAL (SIDEBAR & NAVEGAÇÃO DE ABAS)
+-- NAVEGAÇÃO DE ABAS
 ---------------------------------------------------------
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 130, 1, -42)
@@ -123,9 +130,7 @@ Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
--- Tabela para gerenciar abas
 local Tabs = {}
-local CurrentTab = nil
 
 local function CreateTabButton(name, positionY)
     local TabBtn = Instance.new("TextButton")
@@ -151,9 +156,11 @@ local function CreateTabButton(name, positionY)
     PageScroll.Size = UDim2.new(1, -130, 1, -42)
     PageScroll.Position = UDim2.new(0, 130, 0, 42)
     PageScroll.BackgroundTransparency = 1
-    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 350)
-    PageScroll.ScrollBarThickness = 3
+    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 420)
+    PageScroll.ScrollBarThickness = 4
     PageScroll.ScrollBarImageColor3 = Color3.fromRGB(160, 80, 255)
+    PageScroll.Active = true
+    PageScroll.ScrollingDirection = Enum.ScrollingDirection.Y
     PageScroll.Visible = false
     PageScroll.Parent = MainFrame
 
@@ -164,14 +171,10 @@ local function CreateTabButton(name, positionY)
 
     local PagePadding = Instance.new("UIPadding")
     PagePadding.PaddingTop = UDim.new(0, 10)
-    PagePadding.PaddingBottom = UDim.new(0, 15)
+    PagePadding.PaddingBottom = UDim.new(0, 20)
     PagePadding.Parent = PageScroll
 
-    local tabData = {
-        Button = TabBtn,
-        Indicator = Indicator,
-        Page = PageScroll
-    }
+    local tabData = { Button = TabBtn, Indicator = Indicator, Page = PageScroll }
 
     TabBtn.MouseButton1Click:Connect(function()
         for _, tab in pairs(Tabs) do
@@ -188,16 +191,14 @@ local function CreateTabButton(name, positionY)
     return PageScroll, tabData
 end
 
--- Criar as 2 Abas
 local MainHubPage, Tab1Data = CreateTabButton("Rauan Hub", 10)
 local MenuPage, Tab2Data = CreateTabButton("Menu", 45)
 
--- Ativar primeira aba por padrão
 Tab1Data.Page.Visible = true
 Tab1Data.Indicator.Visible = true
 Tab1Data.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Perfil do Usuário no Rodapé
+-- Perfil de Usuário
 local UserFrame = Instance.new("Frame")
 UserFrame.Size = UDim2.new(1, 0, 0, 42)
 UserFrame.Position = UDim2.new(0, 0, 1, -42)
@@ -205,20 +206,9 @@ UserFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 UserFrame.BorderSizePixel = 0
 UserFrame.Parent = Sidebar
 
-local UserImage = Instance.new("ImageLabel")
-UserImage.Size = UDim2.new(0, 28, 0, 28)
-UserImage.Position = UDim2.new(0, 8, 0.5, -14)
-UserImage.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-UserImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-UserImage.Parent = UserFrame
-
-local UserImageCorner = Instance.new("UICorner")
-UserImageCorner.CornerRadius = UDim.new(1, 0)
-UserImageCorner.Parent = UserImage
-
 local DisplayName = Instance.new("TextLabel")
-DisplayName.Size = UDim2.new(0, 80, 0, 12)
-DisplayName.Position = UDim2.new(0, 42, 0, 8)
+DisplayName.Size = UDim2.new(0, 110, 0, 12)
+DisplayName.Position = UDim2.new(0, 12, 0, 8)
 DisplayName.Text = LocalPlayer.DisplayName
 DisplayName.TextColor3 = Color3.fromRGB(240, 240, 240)
 DisplayName.TextSize = 11
@@ -228,8 +218,8 @@ DisplayName.BackgroundTransparency = 1
 DisplayName.Parent = UserFrame
 
 local Username = Instance.new("TextLabel")
-Username.Size = UDim2.new(0, 80, 0, 10)
-Username.Position = UDim2.new(0, 42, 0, 22)
+Username.Size = UDim2.new(0, 110, 0, 10)
+Username.Position = UDim2.new(0, 12, 0, 22)
 Username.Text = "@" .. LocalPlayer.Name
 Username.TextColor3 = Color3.fromRGB(130, 80, 200)
 Username.TextSize = 9
@@ -239,9 +229,8 @@ Username.BackgroundTransparency = 1
 Username.Parent = UserFrame
 
 ---------------------------------------------------------
--- CONTEÚDO ABA 1: RAUAN HUB (INFORMAÇÕES E REDES)
+-- ABA 1: RAUAN HUB
 ---------------------------------------------------------
--- Banner Principal
 local Banner = Instance.new("Frame")
 Banner.Size = UDim2.new(0.92, 0, 0, 75)
 Banner.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
@@ -251,23 +240,9 @@ local BannerCorner = Instance.new("UICorner")
 BannerCorner.CornerRadius = UDim.new(0, 8)
 BannerCorner.Parent = Banner
 
-local BannerLogo = Instance.new("TextLabel")
-BannerLogo.Size = UDim2.new(0, 45, 0, 45)
-BannerLogo.Position = UDim2.new(0, 12, 0.5, -22)
-BannerLogo.BackgroundColor3 = Color3.fromRGB(30, 20, 45)
-BannerLogo.Text = "R"
-BannerLogo.TextColor3 = Color3.fromRGB(180, 100, 255)
-BannerLogo.TextSize = 32
-BannerLogo.Font = Enum.Font.SourceSansBold
-BannerLogo.Parent = Banner
-
-local BannerLogoCorner = Instance.new("UICorner")
-BannerLogoCorner.CornerRadius = UDim.new(0, 10)
-BannerLogoCorner.Parent = BannerLogo
-
 local BannerTitle = Instance.new("TextLabel")
 BannerTitle.Size = UDim2.new(0, 200, 0, 20)
-BannerTitle.Position = UDim2.new(0, 68, 0, 14)
+BannerTitle.Position = UDim2.new(0, 15, 0, 14)
 BannerTitle.Text = "Rauan Hub"
 BannerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 BannerTitle.TextSize = 20
@@ -277,8 +252,8 @@ BannerTitle.BackgroundTransparency = 1
 BannerTitle.Parent = Banner
 
 local BannerSub = Instance.new("TextLabel")
-BannerSub.Size = UDim2.new(0, 240, 0, 28)
-BannerSub.Position = UDim2.new(0, 68, 0, 36)
+BannerSub.Size = UDim2.new(0, 280, 0, 28)
+BannerSub.Position = UDim2.new(0, 15, 0, 36)
 BannerSub.Text = "Apenas um script simples para seu dia a dia, novas updates em breve!"
 BannerSub.TextColor3 = Color3.fromRGB(150, 140, 170)
 BannerSub.TextSize = 10
@@ -288,7 +263,6 @@ BannerSub.TextXAlignment = Enum.TextXAlignment.Left
 BannerSub.BackgroundTransparency = 1
 BannerSub.Parent = Banner
 
--- Card Redes Sociais
 local SocialCard = Instance.new("Frame")
 SocialCard.Size = UDim2.new(0.92, 0, 0, 120)
 SocialCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -297,10 +271,6 @@ SocialCard.Parent = MainHubPage
 local SocialCorner = Instance.new("UICorner")
 SocialCorner.CornerRadius = UDim.new(0, 8)
 SocialCorner.Parent = SocialCard
-
-local SocialStroke = Instance.new("UIStroke")
-SocialStroke.Color = Color3.fromRGB(30, 30, 38)
-SocialStroke.Parent = SocialCard
 
 local SocialTitle = Instance.new("TextLabel")
 SocialTitle.Size = UDim2.new(0, 200, 0, 18)
@@ -339,16 +309,20 @@ CopyCorner.CornerRadius = UDim.new(0, 5)
 CopyCorner.Parent = CopyDiscordBtn
 
 CopyDiscordBtn.MouseButton1Click:Connect(function()
-    setclipboard("rauann.xxz")
+    pcall(function()
+        if type(setclipboard) == "function" then setclipboard("rauann.xxz")
+        elseif type(toclipboard) == "function" then toclipboard("rauann.xxz")
+        elseif type(set_clipboard) == "function" then set_clipboard("rauann.xxz")
+        end
+    end)
     CopyDiscordBtn.Text = "Copiado com Sucesso!"
     task.wait(2)
     CopyDiscordBtn.Text = "Copiar User do Discord"
 end)
 
 ---------------------------------------------------------
--- CONTEÚDO ABA 2: MENU (SPEED, JUMP, FLY, NOCLIP)
+-- ABA 2: MENU
 ---------------------------------------------------------
--- Função Genérica de Controle
 local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onValueChange)
     local Container = Instance.new("Frame")
     Container.Size = UDim2.new(0.92, 0, 0, 80)
@@ -358,10 +332,6 @@ local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onV
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 8)
     Corner.Parent = Container
-
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(30, 30, 38)
-    Stroke.Parent = Container
 
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(1, -10, 0, 18)
@@ -419,15 +389,10 @@ local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onV
 
     TextBox.FocusLost:Connect(function()
         local num = tonumber(TextBox.Text)
-        if num then
-            onValueChange(num)
-        else
-            TextBox.Text = tostring(defaultVal)
-        end
+        if num then onValueChange(num) else TextBox.Text = tostring(defaultVal) end
     end)
 end
 
--- Botão Simples de Toggle (Para Noclip e InfJump)
 local function CreateSimpleToggle(parent, titleText, onToggle)
     local Container = Instance.new("Frame")
     Container.Size = UDim2.new(0.92, 0, 0, 50)
@@ -437,10 +402,6 @@ local function CreateSimpleToggle(parent, titleText, onToggle)
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 8)
     Corner.Parent = Container
-
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(30, 30, 38)
-    Stroke.Parent = Container
 
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -483,17 +444,15 @@ local function CreateSimpleToggle(parent, titleText, onToggle)
     end)
 end
 
--- Criando os Controles do Menu
-CreateFeatureControl(MenuPage, "Velocidade (Speed)", 16, function(state) isSpeedActive = state end, function(val) speedValue = val end)
-CreateFeatureControl(MenuPage, "Pulo (Jump Booster)", 50, function(state) isJumpActive = state end, function(val) jumpValue = val end)
-CreateFeatureControl(MenuPage, "Voo Mobile (Fly)", 50, function(state) flyActive = state end, function(val) flySpeed = val end)
-CreateSimpleToggle(MenuPage, "Atravessar Paredes (Noclip)", function(state) noclipActive = state end)
-CreateSimpleToggle(MenuPage, "Pulo Infinito (Inf Jump)", function(state) infJumpActive = state end)
+CreateFeatureControl(MenuPage, "Velocidade (Speed)", 16, function(s) isSpeedActive = s end, function(v) speedValue = v end)
+CreateFeatureControl(MenuPage, "Pulo (Jump Booster)", 50, function(s) isJumpActive = s end, function(v) jumpValue = v end)
+CreateFeatureControl(MenuPage, "Voo Mobile (Fly)", 50, function(s) flyActive = s end, function(v) flySpeed = v end)
+CreateSimpleToggle(MenuPage, "Atravessar Paredes (Noclip)", function(s) noclipActive = s end)
+CreateSimpleToggle(MenuPage, "Pulo Infinito (Inf Jump)", function(s) infJumpActive = s end)
 
 ---------------------------------------------------------
--- SISTEMAS & MECÂNICAS (FLY MOBILE, NOCLIP, INF JUMP)
+-- LOOPS E SISTEMAS ATIVOS
 ---------------------------------------------------------
--- Atualização do FPS e Ping
 local lastUpdate = tick()
 local frameCount = 0
 
@@ -501,23 +460,23 @@ RunService.RenderStepped:Connect(function()
     frameCount = frameCount + 1
     if tick() - lastUpdate >= 1 then
         local fps = math.floor(frameCount / (tick() - lastUpdate))
-        local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-        StatsLabel.Text = "FPS: " .. tostring(fps) .. " | PING: " .. tostring(ping) .. "ms"
+        StatsLabel.Text = "FPS: " .. tostring(fps)
         frameCount = 0
         lastUpdate = tick()
     end
 end)
 
--- Loop Noclip e Stats
 RunService.Stepped:Connect(function()
     if LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetChildren()) do
-            if part:IsA("BasePart") and noclipActive then
-                part.CanCollide = false
+        if noclipActive then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
             end
         end
         
-        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
             if isSpeedActive then humanoid.WalkSpeed = speedValue end
             if isJumpActive then 
@@ -528,14 +487,15 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Sistema de Pulo Infinito
 UserInputService.JumpRequest:Connect(function()
-    if infJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    if infJumpActive and LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
 end)
 
--- Sistema de Voo (Fly Mobile Suave)
 local bodyVelocity, bodyGyro
 RunService.RenderStepped:Connect(function()
     if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -546,4 +506,31 @@ RunService.RenderStepped:Connect(function()
             bodyVelocity = Instance.new("BodyVelocity")
             bodyVelocity.Name = "RauanFlyVel"
             bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-  
+            bodyVelocity.Parent = root
+            
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "RauanFlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            bodyGyro.P = 10000
+            bodyGyro.Parent = root
+        end
+
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        local moveDir = humanoid and humanoid.MoveDirection or Vector3.new()
+        bodyGyro.CFrame = camera.CFrame
+        bodyVelocity.Velocity = (camera.CFrame.LookVector * moveDir.Z * -flySpeed) + (camera.CFrame.RightVector * moveDir.X * flySpeed)
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local root = LocalPlayer.Character.HumanoidRootPart
+            if root:FindFirstChild("RauanFlyVel") then root.RauanFlyVel:Destroy() end
+            if root:FindFirstChild("RauanFlyGyro") then root.RauanFlyGyro:Destroy() end
+        end
+    end
+end)
+
+local function ToggleGui()
+    MainFrame.Visible = not MainFrame.Visible
+end
+
+ToggleButton.MouseButton1Click:Connect(ToggleGui)
+CloseBtn.MouseButton1Click:Connect(ToggleGui)
