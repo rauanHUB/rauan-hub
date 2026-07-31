@@ -546,4 +546,24 @@ RunService.RenderStepped:Connect(function()
             bodyVelocity = Instance.new("BodyVelocity")
             bodyVelocity.Name = "RauanFlyVel"
             bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-  
+            bodyVelocity.Parent = root
+        end
+        
+        if not root:FindFirstChild("RauanFlyGyro") then
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "RauanFlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = root
+        end
+        
+        bodyGyro.CFrame = camera.CFrame
+        bodyVelocity.Velocity = camera.CFrame.LookVector * (flySpeed or 50)
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local root = LocalPlayer.Character.HumanoidRootPart
+            if root:FindFirstChild("RauanFlyVel") then root.RauanFlyVel:Destroy() end
+            if root:FindFirstChild("RauanFlyGyro") then root.RauanFlyGyro:Destroy() end
+        end
+    end
+end)
