@@ -621,6 +621,11 @@ end)
 
 -- SISTEMA DE FLY COM SUBIDA E DESCIDA PELA CÂMERA
 local bodyVelocity, bodyGyro
+local RunService = game:GetService("RunService")
+local LocalPlayer = game.Players.LocalPlayer
+local bodyVelocity, bodyGyro
+local flySpeed = 50 -- Ajuste a velocidade aqui se quiser
+
 RunService.RenderStepped:Connect(function()
     if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local root = LocalPlayer.Character.HumanoidRootPart
@@ -630,6 +635,7 @@ RunService.RenderStepped:Connect(function()
             bodyVelocity = Instance.new("BodyVelocity")
             bodyVelocity.Name = "RauanFlyVel"
             bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyVelocity.Velocity = Vector3.new()
             bodyVelocity.Parent = root
             
             bodyGyro = Instance.new("BodyGyro")
@@ -642,15 +648,14 @@ RunService.RenderStepped:Connect(function()
         local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         local moveDir = humanoid and humanoid.MoveDirection or Vector3.new()
         
-        bodyGyro.CFrame = camera.CFrame
+        bodyGyro.CFrame = CFrame.new(Vector3.new(), camera.CFrame.LookVector)
         
-        if moveDir.Magnitude > 0 then
-            -- Transforma a direção do analógico em relação para onde a câmera está apontando (incluindo cima/baixo)
-            local flyVector = (camera.CFrame.LookVector * -moveDir.Z) + (camera.CFrame.RightVector * moveDir.X)
-            bodyVelocity.Velocity = flyVector * flySpeed
-        else
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        end
+        -- Aqui está a correção: adiciona subida/descida
+        local finalDir = camera.CFrame.LookVector * moveDir.Z
+        finalDir = finalDir + Vector3.new(0, (camera.CFrame.UpVector.Y * moveDir.Y), 0)
+        
+        bodyVelocity.Velocity = finalDir * flySpeed
+
     else
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local root = LocalPlayer.Character.HumanoidRootPart
@@ -663,6 +668,7 @@ end)
 local function ToggleGui()
     MainFrame.Visible = not MainFrame.Visible
 end
+
 ToggleButton.MouseButton1Click:Connect(ToggleGui)
 CloseBtn.MouseButton1Click:Connect(ToggleGui)
 
