@@ -630,20 +630,26 @@ RunService.RenderStepped:Connect(function()
         if not root:FindFirstChild("RauanFlyVel") then
             bodyVelocity = Instance.new("BodyVelocity")
             bodyVelocity.Name = "RauanFlyVel"
-            bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
             bodyVelocity.Parent = root
             
             bodyGyro = Instance.new("BodyGyro")
             bodyGyro.Name = "RauanFlyGyro"
-            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-            bodyGyro.P = 10000
+            bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bodyGyro.P = 20000
             bodyGyro.Parent = root
         end
 
         local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         local moveDir = humanoid and humanoid.MoveDirection or Vector3.new()
+        
         bodyGyro.CFrame = camera.CFrame
-        bodyVelocity.Velocity = (camera.CFrame.LookVector * moveDir.Z * -flySpeed) + (camera.CFrame.RightVector * moveDir.X * flySpeed)
+        
+        if moveDir.Magnitude > 0 then
+            bodyVelocity.Velocity = camera.CFrame:VectorToWorldSpace(Vector3.new(moveDir.X, 0, moveDir.Z)) * flySpeed
+        else
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
     else
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local root = LocalPlayer.Character.HumanoidRootPart
