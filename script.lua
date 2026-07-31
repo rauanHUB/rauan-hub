@@ -1,19 +1,9 @@
--- RAUAN HUBs - Multi-Tab UI (Fix Delta Executer)
+-- RAUAN HUB - Multi-Tab UI para Mobile
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local LocalPlayer = Players.LocalPlayer
-
--- Função segura para Clipboard no Delta
-local function SafeSetClipboard(text)
-    pcall(function()
-        if setclipboard then setclipboard(text)
-        elseif toclipboard then toclipboard(text)
-        elseif set_clipboard then set_clipboard(text)
-        end
-    end)
-end
 
 -- Variáveis Globais de Estado
 local speedValue = 16
@@ -29,16 +19,7 @@ local infJumpActive = false
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RauanHubGui"
 ScreenGui.ResetOnSpawn = false
-
--- Suporte a CoreGui / PlayerGui seguro no Delta
-local parentTarget
-if gethui then
-    pcall(function() parentTarget = gethui() end)
-end
-if not parentTarget then
-    parentTarget = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-end
-ScreenGui.Parent = parentTarget
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 ---------------------------------------------------------
 -- BOTÃO FLUTUANTE (LETRA 'R')
@@ -53,7 +34,7 @@ ToggleButton.TextColor3 = Color3.fromRGB(160, 80, 255)
 ToggleButton.TextSize = 28
 ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.Active = true
-ToggleButton.ZIndex = 100
+ToggleButton.Draggable = true
 ToggleButton.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
@@ -70,12 +51,11 @@ ToggleStroke.Parent = ToggleButton
 ---------------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 480, 0, 310)
-MainFrame.Position = UDim2.new(0.5, -240, 0.5, -155)
+MainFrame.Size = UDim2.new(0, 500, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
-MainFrame.Active = true
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -127,11 +107,10 @@ local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0.5, -15)
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Text = "X"
+CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = Color3.fromRGB(160, 80, 255)
-CloseBtn.TextSize = 16
-CloseBtn.Font = Enum.Font.ArialBold
-CloseBtn.ZIndex = 10
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Parent = Header
 
 ---------------------------------------------------------
@@ -144,7 +123,9 @@ Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 
+-- Tabela para gerenciar abas
 local Tabs = {}
+local CurrentTab = nil
 
 local function CreateTabButton(name, positionY)
     local TabBtn = Instance.new("TextButton")
@@ -170,12 +151,9 @@ local function CreateTabButton(name, positionY)
     PageScroll.Size = UDim2.new(1, -130, 1, -42)
     PageScroll.Position = UDim2.new(0, 130, 0, 42)
     PageScroll.BackgroundTransparency = 1
-    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 420)
-    PageScroll.ScrollBarThickness = 4
+    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 350)
+    PageScroll.ScrollBarThickness = 3
     PageScroll.ScrollBarImageColor3 = Color3.fromRGB(160, 80, 255)
-    PageScroll.Active = true
-    PageScroll.ScrollingDirection = Enum.ScrollingDirection.Y
-    PageScroll.ElasticBehavior = Enum.ElasticBehavior.Never
     PageScroll.Visible = false
     PageScroll.Parent = MainFrame
 
@@ -186,7 +164,7 @@ local function CreateTabButton(name, positionY)
 
     local PagePadding = Instance.new("UIPadding")
     PagePadding.PaddingTop = UDim.new(0, 10)
-    PagePadding.PaddingBottom = UDim.new(0, 20)
+    PagePadding.PaddingBottom = UDim.new(0, 15)
     PagePadding.Parent = PageScroll
 
     local tabData = {
@@ -210,7 +188,7 @@ local function CreateTabButton(name, positionY)
     return PageScroll, tabData
 end
 
--- Criar as Abas
+-- Criar as 2 Abas
 local MainHubPage, Tab1Data = CreateTabButton("Rauan Hub", 10)
 local MenuPage, Tab2Data = CreateTabButton("Menu", 45)
 
@@ -219,7 +197,7 @@ Tab1Data.Page.Visible = true
 Tab1Data.Indicator.Visible = true
 Tab1Data.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Perfil do Usuário no Rodapé (Protegido contra erros do Delta)
+-- Perfil do Usuário no Rodapé
 local UserFrame = Instance.new("Frame")
 UserFrame.Size = UDim2.new(1, 0, 0, 42)
 UserFrame.Position = UDim2.new(0, 0, 1, -42)
@@ -231,11 +209,7 @@ local UserImage = Instance.new("ImageLabel")
 UserImage.Size = UDim2.new(0, 28, 0, 28)
 UserImage.Position = UDim2.new(0, 8, 0.5, -14)
 UserImage.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-
--- Tenta carregar a imagem com fallback em caso de erro no Delta
-pcall(function()
-    UserImage.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
-end)
+UserImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 UserImage.Parent = UserFrame
 
 local UserImageCorner = Instance.new("UICorner")
@@ -265,8 +239,9 @@ Username.BackgroundTransparency = 1
 Username.Parent = UserFrame
 
 ---------------------------------------------------------
--- CONTEÚDO ABA 1: RAUAN HUB
+-- CONTEÚDO ABA 1: RAUAN HUB (INFORMAÇÕES E REDES)
 ---------------------------------------------------------
+-- Banner Principal
 local Banner = Instance.new("Frame")
 Banner.Size = UDim2.new(0.92, 0, 0, 75)
 Banner.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
@@ -313,6 +288,7 @@ BannerSub.TextXAlignment = Enum.TextXAlignment.Left
 BannerSub.BackgroundTransparency = 1
 BannerSub.Parent = Banner
 
+-- Card Redes Sociais
 local SocialCard = Instance.new("Frame")
 SocialCard.Size = UDim2.new(0.92, 0, 0, 120)
 SocialCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -363,15 +339,16 @@ CopyCorner.CornerRadius = UDim.new(0, 5)
 CopyCorner.Parent = CopyDiscordBtn
 
 CopyDiscordBtn.MouseButton1Click:Connect(function()
-    SafeSetClipboard("rauann.xxz")
+    setclipboard("rauann.xxz")
     CopyDiscordBtn.Text = "Copiado com Sucesso!"
     task.wait(2)
     CopyDiscordBtn.Text = "Copiar User do Discord"
 end)
 
 ---------------------------------------------------------
--- CONTEÚDO ABA 2: MENU
+-- CONTEÚDO ABA 2: MENU (SPEED, JUMP, FLY, NOCLIP)
 ---------------------------------------------------------
+-- Função Genérica de Controle
 local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onValueChange)
     local Container = Instance.new("Frame")
     Container.Size = UDim2.new(0.92, 0, 0, 80)
@@ -450,6 +427,7 @@ local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onV
     end)
 end
 
+-- Botão Simples de Toggle (Para Noclip e InfJump)
 local function CreateSimpleToggle(parent, titleText, onToggle)
     local Container = Instance.new("Frame")
     Container.Size = UDim2.new(0.92, 0, 0, 50)
@@ -505,6 +483,7 @@ local function CreateSimpleToggle(parent, titleText, onToggle)
     end)
 end
 
+-- Criando os Controles do Menu
 CreateFeatureControl(MenuPage, "Velocidade (Speed)", 16, function(state) isSpeedActive = state end, function(val) speedValue = val end)
 CreateFeatureControl(MenuPage, "Pulo (Jump Booster)", 50, function(state) isJumpActive = state end, function(val) jumpValue = val end)
 CreateFeatureControl(MenuPage, "Voo Mobile (Fly)", 50, function(state) flyActive = state end, function(val) flySpeed = val end)
@@ -512,8 +491,9 @@ CreateSimpleToggle(MenuPage, "Atravessar Paredes (Noclip)", function(state) nocl
 CreateSimpleToggle(MenuPage, "Pulo Infinito (Inf Jump)", function(state) infJumpActive = state end)
 
 ---------------------------------------------------------
--- SISTEMAS & MECÂNICAS
+-- SISTEMAS & MECÂNICAS (FLY MOBILE, NOCLIP, INF JUMP)
 ---------------------------------------------------------
+-- Atualização do FPS e Ping
 local lastUpdate = tick()
 local frameCount = 0
 
@@ -521,27 +501,23 @@ RunService.RenderStepped:Connect(function()
     frameCount = frameCount + 1
     if tick() - lastUpdate >= 1 then
         local fps = math.floor(frameCount / (tick() - lastUpdate))
-        local ping = 0
-        pcall(function()
-            ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-        end)
+        local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
         StatsLabel.Text = "FPS: " .. tostring(fps) .. " | PING: " .. tostring(ping) .. "ms"
         frameCount = 0
         lastUpdate = tick()
     end
 end)
 
+-- Loop Noclip e Stats
 RunService.Stepped:Connect(function()
     if LocalPlayer.Character then
-        if noclipActive then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
+        for _, part in pairs(LocalPlayer.Character:GetChildren()) do
+            if part:IsA("BasePart") and noclipActive then
+                part.CanCollide = false
             end
         end
         
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
         if humanoid then
             if isSpeedActive then humanoid.WalkSpeed = speedValue end
             if isJumpActive then 
@@ -552,8 +528,22 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- Sistema de Pulo Infinito
 UserInputService.JumpRequest:Connect(function()
-    if infJumpActive and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Jump
+    if infJumpActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- Sistema de Voo (Fly Mobile Suave)
+local bodyVelocity, bodyGyro
+RunService.RenderStepped:Connect(function()
+    if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root = LocalPlayer.Character.HumanoidRootPart
+        local camera = workspace.CurrentCamera
+        
+        if not root:FindFirstChild("RauanFlyVel") then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Name = "RauanFlyVel"
+            bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+  
