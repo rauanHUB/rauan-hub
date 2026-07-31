@@ -1,9 +1,19 @@
--- RAUAN HUB - Multi-Tab UI para Mobile (Versão Delta Executor)
+-- RAUAN HUBs - Multi-Tab UI (Fix Delta Executer)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local LocalPlayer = Players.LocalPlayer
+
+-- Função segura para Clipboard no Delta
+local function SafeSetClipboard(text)
+    pcall(function()
+        if setclipboard then setclipboard(text)
+        elseif toclipboard then toclipboard(text)
+        elseif set_clipboard then set_clipboard(text)
+        end
+    end)
+end
 
 -- Variáveis Globais de Estado
 local speedValue = 16
@@ -20,8 +30,14 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RauanHubGui"
 ScreenGui.ResetOnSpawn = false
 
--- Suporte a CoreGui / PlayerGui para o Delta
-local parentTarget = (gethui and gethui()) or game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+-- Suporte a CoreGui / PlayerGui seguro no Delta
+local parentTarget
+if gethui then
+    pcall(function() parentTarget = gethui() end)
+end
+if not parentTarget then
+    parentTarget = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+end
 ScreenGui.Parent = parentTarget
 
 ---------------------------------------------------------
@@ -154,12 +170,12 @@ local function CreateTabButton(name, positionY)
     PageScroll.Size = UDim2.new(1, -130, 1, -42)
     PageScroll.Position = UDim2.new(0, 130, 0, 42)
     PageScroll.BackgroundTransparency = 1
-    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 420) -- Tamanho adequado para rolagem suave
+    PageScroll.CanvasSize = UDim2.new(0, 0, 0, 420)
     PageScroll.ScrollBarThickness = 4
     PageScroll.ScrollBarImageColor3 = Color3.fromRGB(160, 80, 255)
     PageScroll.Active = true
     PageScroll.ScrollingDirection = Enum.ScrollingDirection.Y
-    PageScroll.ElasticBehavior = Enum.ElasticBehavior.Never -- Impede que o Delta "puxe" a tela de volta pro topo
+    PageScroll.ElasticBehavior = Enum.ElasticBehavior.Never
     PageScroll.Visible = false
     PageScroll.Parent = MainFrame
 
@@ -194,7 +210,7 @@ local function CreateTabButton(name, positionY)
     return PageScroll, tabData
 end
 
--- Criar as 2 Abas
+-- Criar as Abas
 local MainHubPage, Tab1Data = CreateTabButton("Rauan Hub", 10)
 local MenuPage, Tab2Data = CreateTabButton("Menu", 45)
 
@@ -203,7 +219,7 @@ Tab1Data.Page.Visible = true
 Tab1Data.Indicator.Visible = true
 Tab1Data.Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 
--- Perfil do Usuário no Rodapé
+-- Perfil do Usuário no Rodapé (Protegido contra erros do Delta)
 local UserFrame = Instance.new("Frame")
 UserFrame.Size = UDim2.new(1, 0, 0, 42)
 UserFrame.Position = UDim2.new(0, 0, 1, -42)
@@ -215,8 +231,10 @@ local UserImage = Instance.new("ImageLabel")
 UserImage.Size = UDim2.new(0, 28, 0, 28)
 UserImage.Position = UDim2.new(0, 8, 0.5, -14)
 UserImage.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+
+-- Tenta carregar a imagem com fallback em caso de erro no Delta
 pcall(function()
-    UserImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    UserImage.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
 end)
 UserImage.Parent = UserFrame
 
@@ -247,7 +265,7 @@ Username.BackgroundTransparency = 1
 Username.Parent = UserFrame
 
 ---------------------------------------------------------
--- CONTEÚDO ABA 1: RAUAN HUB (INFORMAÇÕES E REDES)
+-- CONTEÚDO ABA 1: RAUAN HUB
 ---------------------------------------------------------
 local Banner = Instance.new("Frame")
 Banner.Size = UDim2.new(0.92, 0, 0, 75)
@@ -344,24 +362,15 @@ local CopyCorner = Instance.new("UICorner")
 CopyCorner.CornerRadius = UDim.new(0, 5)
 CopyCorner.Parent = CopyDiscordBtn
 
--- Cópia para Clipboard compatível com Delta
 CopyDiscordBtn.MouseButton1Click:Connect(function()
-    pcall(function()
-        if setclipboard then
-            setclipboard("rauann.xxz")
-        elseif toclipboard then
-            toclipboard("rauann.xxz")
-        elseif set_clipboard then
-            set_clipboard("rauann.xxz")
-        end
-    end)
+    SafeSetClipboard("rauann.xxz")
     CopyDiscordBtn.Text = "Copiado com Sucesso!"
     task.wait(2)
     CopyDiscordBtn.Text = "Copiar User do Discord"
 end)
 
 ---------------------------------------------------------
--- CONTEÚDO ABA 2: MENU (SPEED, JUMP, FLY, NOCLIP)
+-- CONTEÚDO ABA 2: MENU
 ---------------------------------------------------------
 local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onValueChange)
     local Container = Instance.new("Frame")
@@ -496,7 +505,6 @@ local function CreateSimpleToggle(parent, titleText, onToggle)
     end)
 end
 
--- Criando os Controles do Menu
 CreateFeatureControl(MenuPage, "Velocidade (Speed)", 16, function(state) isSpeedActive = state end, function(val) speedValue = val end)
 CreateFeatureControl(MenuPage, "Pulo (Jump Booster)", 50, function(state) isJumpActive = state end, function(val) jumpValue = val end)
 CreateFeatureControl(MenuPage, "Voo Mobile (Fly)", 50, function(state) flyActive = state end, function(val) flySpeed = val end)
@@ -506,7 +514,6 @@ CreateSimpleToggle(MenuPage, "Pulo Infinito (Inf Jump)", function(state) infJump
 ---------------------------------------------------------
 -- SISTEMAS & MECÂNICAS
 ---------------------------------------------------------
--- Atualização de FPS e Ping
 local lastUpdate = tick()
 local frameCount = 0
 
@@ -524,7 +531,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Loop Noclip e Stats
 RunService.Stepped:Connect(function()
     if LocalPlayer.Character then
         if noclipActive then
@@ -546,7 +552,8 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Sistema de Pulo Infinito
 UserInputService.JumpRequest:Connect(function()
     if infJumpActive and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jump
