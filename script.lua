@@ -442,7 +442,6 @@ CopyDiscordBtn.MouseButton1Click:Connect(function()
     task.wait(2)
     CopyDiscordBtn.Text = "Copiar User do Discord"
 end)
-
 local function CreateFeatureControl(parent, titleText, defaultVal, onToggle, onValueChange)
     local Container = Instance.new("Frame")
     Container.Size = UDim2.new(0.92, 0, 0, 80)
@@ -557,4 +556,108 @@ local function CreateSimpleToggle(parent, titleText, onToggle)
 
     local active = false
     ToggleBtn.MouseButton1Click:Connect(function()
-  
+        active = not active
+        if active then
+            ToggleBtn.Text = "ON"
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 240)
+            ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Notify(titleText, "Status: Ativado")
+        else
+            ToggleBtn.Text = "OFF"
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+            ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
+            Notify(titleText, "Status: Desativado")
+        end
+        onToggle(active)
+    end)
+end
+
+CreateFeatureControl(MenuPage, "Velocidade (Speed)", 16, function(s) isSpeedActive = s end, function(v) speedValue = v end)
+CreateFeatureControl(MenuPage, "Pulo (Jump Booster)", 50, function(s) isJumpActive = s end, function(v) jumpValue = v end)
+CreateFeatureControl(MenuPage, "Voo Mobile (Fly)", 50, function(s) flyActive = s end, function(v) flySpeed = v end)
+CreateSimpleToggle(MenuPage, "Atravessar Paredes (Noclip)", function(s) noclipActive = s end)
+CreateSimpleToggle(MenuPage, "Pulo Infinito (Inf Jump)", function(s) infJumpActive = s end)
+
+local lastUpdate = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    if tick() - lastUpdate >= 1 then
+        local fps = math.floor(frameCount / (tick() - lastUpdate))
+        StatsLabel.Text = "FPS: " .. tostring(fps)
+        frameCount = 0
+        lastUpdate = tick()
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if LocalPlayer.Character then
+        if noclipActive then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+        
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if isSpeedActive then humanoid.WalkSpeed = speedValue end
+            if isJumpActive then 
+                humanoid.UseJumpPower = true
+                humanoid.JumpPower = jumpValue 
+            end
+        end
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if infJumpActive and LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+local bodyVelocity, bodyGyro
+RunService.RenderStepped:Connect(function()
+    if flyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root = LocalPlayer.Character.HumanoidRootPart
+        local camera = workspace.CurrentCamera
+        
+        if not root:FindFirstChild("RauanFlyVel") then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Name = "RauanFlyVel"
+            bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            bodyVelocity.Parent = root
+            
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "RauanFlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            bodyGyro.P = 10000
+            bodyGyro.Parent = root
+        end
+
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        local moveDir = humanoid and humanoid.MoveDirection or Vector3.new()
+        bodyGyro.CFrame = camera.CFrame
+        bodyVelocity.Velocity = (camera.CFrame.LookVector * moveDir.Z * -flySpeed) + (camera.CFrame.RightVector * moveDir.X * flySpeed)
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local root = LocalPlayer.Character.HumanoidRootPart
+            if root:FindFirstChild("RauanFlyVel") then root.RauanFlyVel:Destroy() end
+            if root:FindFirstChild("RauanFlyGyro") then root.RauanFlyGyro:Destroy() end
+        end
+    end
+end)
+
+local function ToggleGui()
+    MainFrame.Visible = not MainFrame.Visible
+end
+
+ToggleButton.MouseButton1Click:Connect(ToggleGui)
+CloseBtn.MouseButton1Click:Connect(ToggleGui)
+
+Notify("Rauan Hub", "Carregado com sucesso!")
